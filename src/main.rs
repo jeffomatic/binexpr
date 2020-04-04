@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 #[derive(Debug, Eq, PartialEq)]
 enum Operator {
     Add,
@@ -23,6 +25,10 @@ impl Operator {
             _ => None,
         }
     }
+
+    fn cmp_precedence(&self, other: &Self) -> Ordering {
+        self.precedence().cmp(&other.precedence())
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,26 +42,59 @@ enum Node {
 }
 
 fn parse(toks: &[String]) -> Node {
+    if toks.is_empty() {
+        panic!("empty token stream");
+    }
+
     let (first, rest) = toks.split_first().unwrap();
 
     if let Some(_) = Operator::maybe(first) {
         panic!("operator found at beginning of token stream. unary operators not supported.");
     }
 
-    let leaf = Node::Leaf(first.to_string());
+    let left = Node::Leaf(first.to_string());
 
     if rest.len() == 0 {
-        return leaf;
+        return left;
     }
 
     let (op, rest) = rest.split_first().unwrap();
     match Operator::maybe(op) {
         None => panic!("operator expected after leaf node"),
-        Some(op) => Node::Operation {
-            op,
-            left: Box::new(leaf),
-            right: Box::new(parse(rest)),
-        },
+        Some(op) => {
+            let right = parse(rest);
+            match right {
+                Node::Leaf(_) => Node::Operation {
+                    op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                },
+                Node::Operation {
+                    op: subnode_op,
+                    left: subnode_left,
+                    right: subnode_right,
+                } => match op.cmp_precedence(&subnode_op) {
+                    Ordering::Less | Ordering::Equal => Node::Operation {
+                        op,
+                        left: Box::new(left),
+                        right: Box::new(Node::Operation {
+                            op: subnode_op,
+                            left: subnode_left,
+                            right: subnode_right,
+                        }),
+                    },
+                    Ordering::Greater => Node::Operation {
+                        op: subnode_op,
+                        left: Box::new(Node::Operation {
+                            op,
+                            left: Box::new(left),
+                            right: subnode_left,
+                        }),
+                        right: subnode_right,
+                    },
+                },
+            }
+        }
     }
 }
 
@@ -63,8 +102,12 @@ fn main() {
     println!("Hello, world!");
 }
 
-fn tokenize(str: &str) -> Vec<String> {
-    str.split_whitespace().map(|s| s.to_string()).collect()
+fn tokenize(s: &str) -> Vec<String> {
+    s.split_whitespace().map(|s| s.to_string()).collect()
+}
+
+fn leafbox(s: &str) -> Box<Node> {
+    Box::new(Node::Leaf(s.to_string()))
 }
 
 #[test]
@@ -75,8 +118,8 @@ fn test() {
         parse(&tokenize("a + b")),
         Node::Operation {
             op: Operator::Add,
-            left: Box::new(Node::Leaf("a".to_string())),
-            right: Box::new(Node::Leaf("b".to_string())),
+            left: leafbox("a"),
+            right: leafbox("b"),
         }
     );
 
@@ -84,12 +127,55 @@ fn test() {
         parse(&tokenize("a + b - c")),
         Node::Operation {
             op: Operator::Add,
-            left: Box::new(Node::Leaf("a".to_string())),
+            left: leafbox("a"),
             right: Box::new(Node::Operation {
                 op: Operator::Sub,
-                left: Box::new(Node::Leaf("b".to_string())),
-                right: Box::new(Node::Leaf("c".to_string())),
+                left: leafbox("b"),
+                right: leafbox("c"),
             }),
+        }
+    );
+
+    assert_eq!(
+        parse(&tokenize("a + b * c")),
+        Node::Operation {
+            op: Operator::Add,
+            left: leafbox("a"),
+            right: Box::new(Node::Operation {
+                op: Operator::Mul,
+                left: leafbox("b"),
+                right: leafbox("c"),
+            }),
+        }
+    );
+
+    assert_eq!(
+        parse(&tokenize("a * b + c")),
+        Node::Operation {
+            op: Operator::Add,
+            left: Box::new(Node::Operation {
+                op: Operator::Mul,
+                left: leafbox("a"),
+                right: leafbox("b"),
+            }),
+            right: leafbox("c"),
+        }
+    );
+
+    assert_eq!(
+        parse(&tokenize("a + b * c + d")),
+        Node::Operation {
+            op: Operator::Add,
+            left: leafbox("a"),
+            right: Box::new(Node::Operation {
+                op: Operator::Add,
+                left: Box::new(Node::Operation {
+                    op: Operator::Mul,
+                    left: leafbox("b"),
+                    right: leafbox("c"),
+                }),
+                right: leafbox("d")
+            })
         }
     );
 }
