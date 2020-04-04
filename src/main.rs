@@ -50,12 +50,12 @@ fn parse(toks: &[String]) -> Node {
     }
 
     let (first, rest) = toks.split_first().unwrap();
-    if let Some(_) = Operator::maybe(first) {
+    if Operator::maybe(first).is_some() {
         panic!("operator found at beginning of token stream. unary operators not supported.");
     }
 
     let left = Node::Leaf(first.to_string());
-    if rest.len() == 0 {
+    if rest.is_empty() {
         return left;
     }
 
