@@ -1,24 +1,44 @@
+#[derive(Debug, Eq, PartialEq)]
+enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl Operator {
+    fn precedence(&self) -> i64 {
+        match self {
+            Self::Add | Self::Sub => 10,
+            Self::Mul | Self::Div => 100,
+        }
+    }
+
+    fn maybe(s: &str) -> Option<Operator> {
+        match s {
+            "+" => Some(Self::Add),
+            "-" => Some(Self::Sub),
+            "*" => Some(Self::Mul),
+            "/" => Some(Self::Div),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum Node {
     Operation {
-        op: String,
+        op: Operator,
         left: Box<Node>,
         right: Box<Node>,
     },
     Leaf(String),
 }
 
-fn maybe_operator(t: &str) -> Option<&str> {
-    match t {
-        "+" | "-" | "*" | "/" => Some(t),
-        _ => None,
-    }
-}
-
 fn parse(toks: &[String]) -> Node {
     let (first, rest) = toks.split_first().unwrap();
 
-    if let Some(_) = maybe_operator(first) {
+    if let Some(_) = Operator::maybe(first) {
         panic!("operator found at beginning of token stream. unary operators not supported.");
     }
 
@@ -29,10 +49,10 @@ fn parse(toks: &[String]) -> Node {
     }
 
     let (op, rest) = rest.split_first().unwrap();
-    match maybe_operator(op) {
+    match Operator::maybe(op) {
         None => panic!("operator expected after leaf node"),
         Some(op) => Node::Operation {
-            op: op.to_string(),
+            op,
             left: Box::new(leaf),
             right: Box::new(parse(rest)),
         },
@@ -50,21 +70,23 @@ fn to_stringvec(strs: &[&str]) -> Vec<String> {
 #[test]
 fn test() {
     assert_eq!(parse(&to_stringvec(&["a"])), Node::Leaf("a".to_string()));
+
     assert_eq!(
         parse(&to_stringvec(&["a", "+", "b"])),
         Node::Operation {
-            op: "+".to_string(),
+            op: Operator::Add,
             left: Box::new(Node::Leaf("a".to_string())),
             right: Box::new(Node::Leaf("b".to_string())),
         }
     );
+
     assert_eq!(
         parse(&to_stringvec(&["a", "+", "b", "-", "c"])),
         Node::Operation {
-            op: "+".to_string(),
+            op: Operator::Add,
             left: Box::new(Node::Leaf("a".to_string())),
             right: Box::new(Node::Operation {
-                op: "-".to_string(),
+                op: Operator::Sub,
                 left: Box::new(Node::Leaf("b".to_string())),
                 right: Box::new(Node::Leaf("c".to_string())),
             }),
