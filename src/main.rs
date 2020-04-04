@@ -63,16 +63,16 @@ fn main() {
     println!("Hello, world!");
 }
 
-fn to_stringvec(strs: &[&str]) -> Vec<String> {
-    strs.iter().map(|s| s.to_string()).collect()
+fn tokenize(str: &str) -> Vec<String> {
+    str.split_whitespace().map(|s| s.to_string()).collect()
 }
 
 #[test]
 fn test() {
-    assert_eq!(parse(&to_stringvec(&["a"])), Node::Leaf("a".to_string()));
+    assert_eq!(parse(&tokenize("a")), Node::Leaf("a".to_string()));
 
     assert_eq!(
-        parse(&to_stringvec(&["a", "+", "b"])),
+        parse(&tokenize("a + b")),
         Node::Operation {
             op: Operator::Add,
             left: Box::new(Node::Leaf("a".to_string())),
@@ -81,7 +81,7 @@ fn test() {
     );
 
     assert_eq!(
-        parse(&to_stringvec(&["a", "+", "b", "-", "c"])),
+        parse(&tokenize("a + b - c")),
         Node::Operation {
             op: Operator::Add,
             left: Box::new(Node::Leaf("a".to_string())),
