@@ -41,7 +41,7 @@ enum Node {
         left: Box<Node>,
         right: Box<Node>,
     },
-    Enclosure(Box<Node>),
+    Parenthetical(Box<Node>),
     Leaf(String),
 }
 
@@ -56,7 +56,7 @@ fn parse(toks: &[String]) -> Node {
             panic!("operator found at beginning of token stream. unary operators not supported.")
         }
         ")" => panic!("unmatched close brace"),
-        "(" => parse_enclosed(rest),
+        "(" => parse_parenthetical(rest),
         _ => (Node::Leaf(first.to_string()), rest),
     };
 
@@ -72,9 +72,9 @@ fn parse(toks: &[String]) -> Node {
 }
 
 // Parses a token stream assuming that the preceding token was an open brace.
-// Returns the first node in the stream (the parsed enclosed expression), plus
-// any remaining tokens in the stream not part of the enclosed expression.
-fn parse_enclosed(toks: &[String]) -> (Node, &[String]) {
+// Returns the first node in the stream (the parsed parenthetical expression), plus
+// any remaining tokens in the stream not part of the parenthetical expression.
+fn parse_parenthetical(toks: &[String]) -> (Node, &[String]) {
     let mut open = 1;
     let mut close_pos = None;
 
@@ -98,7 +98,7 @@ fn parse_enclosed(toks: &[String]) -> (Node, &[String]) {
         Some(close_pos) => {
             let (inner, after) = toks.split_at(close_pos);
             (
-                Node::Enclosure(Box::new(parse(inner))),
+                Node::Parenthetical(Box::new(parse(inner))),
                 after.split_first().unwrap().1, // skip closing brace
             )
         }
@@ -127,7 +127,7 @@ fn compose_with_precedence(op: Operator, left: Node, into: Node) -> Node {
                 right: subnode_right,
             },
         },
-        // leaves and enclosures
+        // leaves and parentheticals
         _ => Node::Operation {
             op,
             left: Box::new(left),
@@ -261,14 +261,14 @@ fn test() {
                 }),
             },
         ),
-        ("( a )", Node::Enclosure(leafbox("a"))),
+        ("( a )", Node::Parenthetical(leafbox("a"))),
         (
             "( ( a ) )",
-            Node::Enclosure(Box::new(Node::Enclosure(leafbox("a")))),
+            Node::Parenthetical(Box::new(Node::Parenthetical(leafbox("a")))),
         ),
         (
             "( a + b )",
-            Node::Enclosure(Box::new(Node::Operation {
+            Node::Parenthetical(Box::new(Node::Operation {
                 op: Operator::Add,
                 left: leafbox("a"),
                 right: leafbox("b"),
@@ -279,7 +279,7 @@ fn test() {
             Node::Operation {
                 op: Operator::Mul,
                 left: leafbox("a"),
-                right: Box::new(Node::Enclosure(Box::new(Node::Operation {
+                right: Box::new(Node::Parenthetical(Box::new(Node::Operation {
                     op: Operator::Add,
                     left: leafbox("b"),
                     right: leafbox("c"),
@@ -290,7 +290,7 @@ fn test() {
             "( a + b ) * c",
             Node::Operation {
                 op: Operator::Mul,
-                left: Box::new(Node::Enclosure(Box::new(Node::Operation {
+                left: Box::new(Node::Parenthetical(Box::new(Node::Operation {
                     op: Operator::Add,
                     left: leafbox("a"),
                     right: leafbox("b"),
@@ -302,7 +302,7 @@ fn test() {
             "( a + b ) * c",
             Node::Operation {
                 op: Operator::Mul,
-                left: Box::new(Node::Enclosure(Box::new(Node::Operation {
+                left: Box::new(Node::Parenthetical(Box::new(Node::Operation {
                     op: Operator::Add,
                     left: leafbox("a"),
                     right: leafbox("b"),
@@ -314,12 +314,12 @@ fn test() {
             "( a + b ) ^ ( c * d )",
             Node::Operation {
                 op: Operator::Exp,
-                left: Box::new(Node::Enclosure(Box::new(Node::Operation {
+                left: Box::new(Node::Parenthetical(Box::new(Node::Operation {
                     op: Operator::Add,
                     left: leafbox("a"),
                     right: leafbox("b"),
                 }))),
-                right: Box::new(Node::Enclosure(Box::new(Node::Operation {
+                right: Box::new(Node::Parenthetical(Box::new(Node::Operation {
                     op: Operator::Mul,
                     left: leafbox("c"),
                     right: leafbox("d"),
