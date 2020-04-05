@@ -110,7 +110,7 @@ Let's go through that step by step.
     a   b
     ```
 
-It's actually a bit more complicated when you have more than two levels of precedence. Consider what happens if try to parse the expression `a ^ b * c + d`. By the conventional rules, we're looking for a tree that looks like this:
+It's actually a bit more complicated when you have more than two levels of precedence. Consider what happens if try to parse the expression `a ^ b * c + d`. By the conventional rules, we'd be looking for a tree that looks like this:
 
 ```
       +
@@ -180,7 +180,7 @@ This looks like a weirdly-rotated reflection of what we want. Let's try to run t
 
 Unfortuantely, that still doesn't look quite right.
 
-Here's the missing piece: we need to repeat the cleanup recursively, between step 4 and 5. In other words, not only do we need to compare the precedence of `^` to the `+` operator, we also need to perform the comparison recursively against whatever's on the left side of th `+` node (in this case, `*`), and so on and so forth.
+Here's the missing piece: we need to repeat the cleanup recursively, between step 4 and 5. In other words, not only do we need to compare the precedence of `^` to the `+` operator, we also need to perform the comparison recursively against whatever's on the left side of the `+` node (in this case, `*`), and so on and so forth.
 
 This is what I meant earlier when I said "take a pass down the left edge of the tree you just created"--you keep going down the left edge until you either hit the end, or you hit an operator with higher precedence.
 
@@ -190,7 +190,7 @@ Okay, but what should this algorithm do about parentheses?
 
 In the first place, we need to make sure our parser can pull out ranges of tokens enclosed by matching braces, and parse those as their own subtree. That's a somewhat less interesting problem, but complex enough that I won't dive into it here.
 
-So, let's assume we have a parser that can do recursive descent within ranges bounded by parentheses. As long as we have some notation that tells us whether a node comes from a parenthesized expression, we simply direct our cleanup algorithm treat those nodes like leaves, rather than subtrees. In other words, we should stop doing any left-edge cleanup if we hit a parenthesized node.
+So, let's assume we have a parser that can do recursive descent within ranges bounded by parentheses. As long as we have some notation that tells us whether a node comes from a parenthesized expression, we can simply have the cleanup algorithm treat those nodes like leaves, rather than subtrees. In other words, we should stop doing any left-edge cleanup if we hit a parenthesized node.
 
 Let's try this with `a * (b + c) + d`. Parentheses-aware recursive descent gives us:
 
