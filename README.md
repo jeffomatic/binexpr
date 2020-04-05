@@ -1,12 +1,18 @@
 # binexpr
 
-Here's a binary infix expression parser with operator precedence, inspired by a [conversation](https://youtu.be/MnctEW1oL-E?t=2922) between Jonathan Blow and Casey Muratori.
+This is a binary infix expression parser. It uses recursive descent, and then fixes up the resulting tree according to operator precedence. Currently it just runs as unit tests, which you can see near the bottom of `main.rs`. Just run `cargo test`.
+
+The algorithm is the point of this repo, but maybe someday I'll get around to making the executable do something useful, like emit an ASCII parse tree.
+
+## Background
+
+This implementation was inspired by a [conversation](https://youtu.be/MnctEW1oL-E?t=2922) between Jonathan Blow and Casey Muratori.
 
 Muratori asks Blow the same question that comes to mind each time I've tried to write a parser: what's an intuitive way to handle infix operators with precedence?
 
 I found Blow's answer, which he refers to as "the second-best way to do it", to be surprisingly simple: do recursive descent when you run into an infix operator, and then take a pass down the left edge of the tree you just created, looking for operators with higher precedence. If you find the latter, then reorganize the tree a bit, and you're done.
 
-Blow then goes on to describe the "best way" he knows how to do it, which I think might be the same thing as what's described in Wikipedia's article on [operator-precdence parsing](https://en.wikipedia.org/wiki/Operator-precedence_parser). But I'm with Muratori on this one: the cleanup-your-tree algorithm feels like the easiest one to keep in your head, at least if you're a fan of recursive algorithms on trees.
+Blow goes on to describe the "best way" he knows how to do it, which is the [precedence climbing](https://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing) technique that appears frequently in the literature. Muratori makes an offhanded remark about his preference for the build-a-tree-and-fix-it technique, and I tend to agree. It has an easy elegance to it. Despite this, it doesn't seem to appear to be all that popular, or at least, I've had a hard time finding resources that mention it. I suspect maybe that has something to do with the perceived slowness of recursion and tree operations.
 
 ## Algorithm
 
@@ -18,7 +24,7 @@ Without any modification, running recursive descent over a stream of infix arith
 (a + (b + (c + (d + ...))))
 ```
 
-It might look something like this as a parse tree:
+As a parse tree, it might look something like this:
 
 ```
   +
@@ -169,7 +175,7 @@ This looks like a weirdly-rotated reflection of what we want. Let's try to run t
 6. ...and put that where (`b * c`) used to be:
 
     ```
-        ^
+        +
        / \
       ^   d
      / \
@@ -178,7 +184,7 @@ This looks like a weirdly-rotated reflection of what we want. Let's try to run t
       b   c
     ```
 
-Unfortuantely, that still doesn't look quite right.
+Unfortunately, that still doesn't look quite right. `a` is being raised to the power of `b * c`, but what we really want is to multiply `a ^ b` with `c`.
 
 Here's the missing piece: we need to repeat the cleanup recursively, between step 4 and 5. In other words, not only do we need to compare the precedence of `^` to the `+` operator, we also need to perform the comparison recursively against whatever's on the left side of the `+` node (in this case, `*`), and so on and so forth.
 
