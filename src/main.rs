@@ -136,6 +136,7 @@ fn compose_with_precedence(op: Operator, left: Node, into: Node) -> Node {
     }
 }
 
+// Just run `cargo test`. The actual executable is friendly but not very useful.
 fn main() {
     println!("Hello, world!");
 }
