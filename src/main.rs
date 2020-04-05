@@ -60,14 +60,12 @@ fn parse(toks: &[String]) -> Node {
         _ => (Node::Leaf(first.to_string()), rest),
     };
 
-    if rest.is_empty() {
-        return left;
-    }
-
-    let (op, rest) = rest.split_first().unwrap();
-    match Operator::maybe(op) {
-        None => panic!("operator expected after leaf node"),
-        Some(op) => compose_with_precedence(op, left, parse(rest)),
+    match rest.split_first() {
+        None => left,
+        Some((op, rest)) => match Operator::maybe(op) {
+            None => panic!("operator expected after leaf node"),
+            Some(op) => compose_with_precedence(op, left, parse(rest)),
+        },
     }
 }
 
