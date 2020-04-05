@@ -204,7 +204,7 @@ a   +
 b   c
 ```
 
-Even though `*` has higher precedence than both `+` operators, our recursive cleanup step will not attempt stop when it hits the `(+)` node, leaving us with the following result:
+Even though `*` has higher precedence than both `+` operators, our recursive cleanup step will stop when it hits the `(+)` node, leaving us with the following result:
 
 ```
     +
