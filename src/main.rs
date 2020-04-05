@@ -109,23 +109,12 @@ fn compose_with_precedence(op: Operator, left: Node, into: Node) -> Node {
             op: subnode_op,
             left: subnode_left,
             right: subnode_right,
-        } => match op.cmp_precedence(&subnode_op) {
-            Ordering::Less | Ordering::Equal => Node::Operation {
-                op,
-                left: Box::new(left),
-                right: Box::new(Node::Operation {
-                    op: subnode_op,
-                    left: subnode_left,
-                    right: subnode_right,
-                }),
-            },
-            Ordering::Greater => Node::Operation {
-                op: subnode_op,
-                left: Box::new(compose_with_precedence(op, left, *subnode_left)),
-                right: subnode_right,
-            },
+        } if op.cmp_precedence(&subnode_op) == Ordering::Greater => Node::Operation {
+            op: subnode_op,
+            left: Box::new(compose_with_precedence(op, left, *subnode_left)),
+            right: subnode_right,
         },
-        // leaves and parentheticals
+        // operations with equal/lower precedence, leaves, and parentheticals
         _ => Node::Operation {
             op,
             left: Box::new(left),
