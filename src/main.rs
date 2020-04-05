@@ -51,10 +51,11 @@ fn parse(toks: &[String]) -> Node {
     }
 
     let (first, rest) = toks.split_first().unwrap();
+    if Operator::maybe(first).is_some() {
+        panic!("operator found at beginning of token stream. unary operators not supported.")
+    }
+
     let (left, rest) = match first.as_str() {
-        _ if Operator::maybe(first).is_some() => {
-            panic!("operator found at beginning of token stream. unary operators not supported.")
-        }
         ")" => panic!("unmatched close brace"),
         "(" => parse_parenthetical(rest),
         _ => (Node::Leaf(first.to_string()), rest),
