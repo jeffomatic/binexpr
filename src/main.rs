@@ -230,6 +230,22 @@ fn test() {
             },
         ),
         (
+            "a * b ^ c + d",
+            Node::Operation {
+                op: Operator::Add,
+                left: Box::new(Node::Operation {
+                    op: Operator::Mul,
+                    left: leafbox("a"),
+                    right: Box::new(Node::Operation {
+                        op: Operator::Exp,
+                        left: leafbox("b"),
+                        right: leafbox("c"),
+                    }),
+                }),
+                right: leafbox("d"),
+            },
+        ),
+        (
             "a * b + c ^ d",
             Node::Operation {
                 op: Operator::Add,
